@@ -301,3 +301,279 @@ financing_pre_approved = (np.random.random(n_samples) <
 Python 3.8+
 pip
 git
+
+### Installation
+
+Clone repository
+git clone https://github.com/amiyasekhar/realestateleadscoring.git
+cd leadscoring
+
+Create virtual environment (recommended)
+python3 -m venv venv
+source venv/bin/activate # On Windows: venv\Scripts\activate
+
+Install dependencies
+pip install -r requirements.txt
+
+### Requirements.txt
+pandas>=2.0.0
+numpy>=1.24.0
+scikit-learn>=1.3.0
+xgboost>=1.7.0
+imbalanced-learn>=0.11.0
+fastapi>=0.104.0
+uvicorn>=0.24.0
+pydantic>=2.0.0
+
+
+### Quick Start
+
+#### 1. Train the Model
+### Quick Start
+
+#### 1. Train the Model
+python3 train_model.py
+
+**Output:**
+
+Total leads: 10000
+Lead Score Distribution:
+High 1847
+Medium 4206
+Low 3947
+
+✅ Dataset saved
+✅ XGBoost Model trained with SMOTE
+Accuracy: 85.00%
+
+Classification Report:
+precision recall f1-score
+High 0.72 0.82 0.77
+Low 0.84 0.84 0.84
+Medium 0.88 0.86 0.87
+
+✅ Model saved to 'lead_scoring_model_xgb.pkl'
+
+
+#### 2. Test the Model
+
+python3 test.py
+
+**Output**: 9/9 test cases passing with confidence scores and recommendations
+
+#### 3. Use in Python
+from lead_scoring_app import LeadScoringSystem
+
+Initialize
+scorer = LeadScoringSystem('lead_scoring_model_xgb.pkl')
+
+Score a single lead
+lead = {
+'age': 45,
+'income': 250000,
+'credit_score': 780,
+'website_visits': 25,
+'email_opens': 15,
+'property_views': 18,
+'contact_attempts': 5,
+'time_on_site_minutes': 90,
+'inquiry_submitted': 1,
+'financing_pre_approved': 1,
+'budget_disclosed': 1,
+'location_preference_set': 1
+}
+
+result = scorer.predict_single(lead)
+
+print(f"Score: {result['lead_score']}")
+print(f"Confidence: {result['confidence']:.2%}")
+print(f"Recommendation: {result['recommendation']}")
+
+
+**Output:**
+Score: High
+Confidence: 99.1%
+Recommendation: Priority follow-up within 24 hours. Assign to senior sales team.
+
+#### 4. Batch Predictions
+leads = [lead1, lead2, lead3, ...]
+results = scorer.predict_batch(leads)
+
+for i, result in enumerate(results):
+print(f"Lead {i}: {result['lead_score']} ({result['confidence']:.1%})")
+
+
+---
+
+## 🌐 Production Deployment
+
+### Option 1: REST API with FastAPI
+
+Start the server
+uvicorn api:app --reload --host 0.0.0.0 --port 8000
+
+Access API docs
+http://localhost:8000/docs (Swagger UI)
+http://localhost:8000/redoc (ReDoc)
+
+**API Endpoints:**
+
+- `GET /` - Service info
+- `GET /health` - Health check
+- `POST /predict` - Score a single lead
+- `POST /predict/batch` - Score multiple leads
+
+**Example Request:**
+
+curl -X POST "http://localhost:8000/predict"
+-H "Content-Type: application/json"
+-d '{
+"age": 45,
+"income": 250000,
+"credit_score": 780,
+"website_visits": 25,
+"email_opens": 15,
+"property_views": 18,
+"contact_attempts": 5,
+"time_on_site_minutes": 90,
+"inquiry_submitted": 1,
+"financing_pre_approved": 1,
+"budget_disclosed": 1,
+"location_preference_set": 1
+}'
+
+
+**Example Response:**
+
+{
+"lead_score": "High",
+"confidence": 0.991,
+"probabilities": {
+"High": 0.991,
+"Low": 0.002,
+"Medium": 0.007
+},
+"recommendation": "Priority follow-up within 24 hours. Assign to senior sales team."
+}
+
+
+### Option 2: Docker Deployment
+
+Build image
+docker build -t lead-scoring-api .
+
+Run container
+docker run -p 8000:8000 lead-scoring-api
+
+Push to Docker Hub (optional)
+docker tag lead-scoring-api YOUR_DOCKER_HUB/lead-scoring-api:latest
+docker push YOUR_DOCKER_HUB/lead-scoring-api:latest
+
+
+### Option 3: AWS Lambda / Cloud Functions
+
+Model and scaler are serialized as `.pkl` files (~50MB), ready for serverless deployment:
+
+import pickle
+import json
+
+def lambda_handler(event, context):
+# Load model
+with open('lead_scoring_model_xgb.pkl', 'rb') as f:
+artifacts = pickle.load(f)
+
+
+model = artifacts['model']
+scaler = artifacts['scaler']
+
+# Process event
+lead_data = json.loads(event['body'])
+prediction = model.predict([lead_data])
+
+return {
+    'statusCode': 200,
+    'body': json.dumps({'prediction': prediction})
+}
+
+---
+
+## 📚 Lessons Learned
+
+### ML Engineering Insights
+
+1. **Data Quality >> Model Complexity**
+   - Started with noisy synthetic data: 67.5% accuracy with Random Forest
+   - Improved data signal (realistic correlations): 85% accuracy with XGBoost
+   - **Lesson**: Spending time on good data generation beats tuning models
+
+2. **Class Imbalance is Critical**
+   - Naive random forest: 90% accuracy but missing 63% of high-value leads
+   - SMOTE + balanced training: 85% accuracy but catching 82% of high-value leads
+   - **Lesson**: Accuracy ≠ Business value. Recall on rare class (High leads) matters most
+
+3. **Algorithm Selection for Tabular Data**
+   - XGBoost consistently outperforms scikit-learn models on structured data
+   - Neural networks overkill for 10K samples (would need 100K+)
+   - **Lesson**: Choose algorithm based on data type, not fashion
+
+4. **Production Readiness Requires Testing**
+   - 9/9 test cases passing gives confidence in edge cases
+   - Borderline leads handled with appropriate uncertainty (53-83% confidence)
+   - **Lesson**: Build comprehensive test suite before deployment
+
+5. **Interpretability Matters for Business**
+   - Feature importance shows Credit + Income = 35% of decision
+   - Probability breakdown explains "why" to stakeholders
+   - **Lesson**: Black-box models don't get buy-in from non-technical teams
+
+### What I'd Do Differently with Real Data
+
+1. **Time-aware splits** (train on Q1-Q3, test on Q4) instead of random
+2. **Feature engineering** with domain expertise (property types, market seasonality)
+3. **A/B testing** model in production (real leads vs. ground truth conversions)
+4. **Retraining pipeline** (monthly update with new lead data)
+5. **Explainability tools** (SHAP values for individual predictions)
+
+---
+
+## 📁 Project Structure
+
+lead-scoring-model/
+├── train_model.py # Data generation + XGBoost training
+├── lead_scoring_app.py # Production prediction class
+├── api.py # FastAPI REST API
+├── test.py # Comprehensive test suite (9 test cases)
+├── lead_scoring_model_xgb.pkl # Serialized trained model
+├── lead_scoring_dataset.csv # Sample training data (10K leads)
+├── requirements.txt # Python dependencies
+├── Dockerfile # Docker configuration
+├── README.md # This file
+└── .gitignore # Git ignore rules
+
+
+---
+
+## 👤 Author
+
+**Amiya Sekhar**  
+ML Engineer | AI & Quantitative Strategies  
+Expertise: XGBoost, Python, Data Engineering, Production ML
+
+**Links:**
+- LinkedIn: https://www.linkedin.com/in/amiya-sekhar-3307771b6/
+- GitHub: https://github.com/amiyasekhar
+- Email: amiyajobapps@gmail.com
+
+---
+
+## 📄 License
+
+MIT License - Free to use for commercial and personal projects
+
+---
+
+## 🙏 Acknowledgments
+
+- XGBoost documentation and community
+- SMOTE paper (Chawla et al., 2002) for handling imbalanced data
+- Real estate industry best practices for lead scoring
