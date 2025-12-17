@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Lead Scoring UI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #0b1020;
+      --card-bg: #151a2c;
+      --accent: #4f46e5;
+      --accent-soft: rgba(79, 70, 229, 0.15);
+      --accent-strong: rgba(79, 70, 229, 0.35);
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --border: #1f2937;
+      --danger: #ef4444;
+      --success: #22c55e;
+      --warning: #eab308;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #1f2937 0, var(--bg) 45%, #020617 100%);
+      color: var(--text);
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .shell {
+      width: 100%;
+      max-width: 1200px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+      gap: 24px;
+    }
+
+    @media (max-width: 960px) {
+      body {
+        padding: 16px;
+      }
+      .shell {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .card {
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.96));
+      border-radius: 20px;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      box-shadow:
+        0 32px 80px rgba(15, 23, 42, 0.9),
+        0 0 0 1px rgba(15, 23, 42, 0.9);
+      padding: 24px;
+      backdrop-filter: blur(22px);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .title {
+      font-size: 1.4rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pill {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: radial-gradient(circle at top left, var(--accent-strong), var(--accent-soft));
+      color: #e0e7ff;
+      border: 1px solid rgba(129, 140, 248, 0.7);
+    }
+
+    .subtitle {
+      font-size: 0.9rem;
+      color: var(--muted);
+      margin: 0 0 8px;
+    }
+
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .badge {
+      font-size: 0.7rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      color: #cbd5f5;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: #22c55e;
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.3);
+    }
+
+    form {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px 16px;
+      margin-top: 8px;
+    }
+
+    @media (max-width: 720px) {
+      form {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 0.8rem;
+    }
+
+    .field label {
+      color: #e5e7eb;
+      font-weight: 500;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .hint {
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+
+    input[type="number"] {
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: radial-gradient(circle at top left, rgba(31, 41, 55, 0.95), rgba(15, 23, 42, 0.98));
+      color: var(--text);
+      padding: 8px 10px;
+      font-size: 0.85rem;
+      outline: none;
+      transition: border-color 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+      -moz-appearance: textfield;
+    }
+
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    input[type="number"]:focus {
+      border-color: rgba(129, 140, 248, 0.8);
+      box-shadow: 0 0 0 1px rgba(129, 140, 248, 0.6);
+      background: radial-gradient(circle at top left, rgba(55, 65, 81, 0.9), rgba(15, 23, 42, 0.98));
+    }
+
+    .toggle-row {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.95), rgba(12, 20, 38, 0.98));
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      font-size: 0.75rem;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .toggle span {
+      color: #e5e7eb;
+    }
+
+    .switch {
+      width: 32px;
+      height: 18px;
+      border-radius: 999px;
+      background: #111827;
+      border: 1px solid rgba(75, 85, 99, 0.8);
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .switch-thumb {
+      position: absolute;
+      top: 1px;
+      left: 1px;
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      background: #9ca3af;
+      transition: transform 0.12s ease, background 0.12s ease, box-shadow 0.12s ease;
+    }
+
+    .toggle[data-on="true"] .switch {
+      background: radial-gradient(circle at top left, rgba(129, 140, 248, 0.9), rgba(79, 70, 229, 0.95));
+      border-color: rgba(129, 140, 248, 0.9);
+    }
+
+    .toggle[data-on="true"] .switch-thumb {
+      transform: translateX(12px);
+      background: #f9fafb;
+      box-shadow: 0 0 0 4px rgba(129, 140, 248, 0.4);
+    }
+
+    .footer-row {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 6px;
+    }
+
+    .left-foot {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .latency-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #22c55e;
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.35);
+    }
+
+    .submit-btn {
+      border: none;
+      border-radius: 999px;
+      padding: 9px 18px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      cursor: pointer;
+      background: radial-gradient(circle at top left, rgba(129, 140, 248, 1), rgba(79, 70, 229, 1));
+      color: #f9fafb;
+      box-shadow:
+        0 18px 40px rgba(79, 70, 229, 0.7),
+        0 0 0 1px rgba(129, 140, 248, 0.7);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.08s ease;
+    }
+
+    .submit-btn:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.03);
+      box-shadow:
+        0 22px 45px rgba(79, 70, 229, 0.8),
+        0 0 0 1px rgba(129, 140, 248, 0.9);
+    }
+
+    .submit-btn:active {
+      transform: translateY(0);
+      box-shadow:
+        0 10px 24px rgba(79, 70, 229, 0.7),
+        0 0 0 1px rgba(129, 140, 248, 0.8);
+    }
+
+    .submit-btn[disabled] {
+      opacity: 0.6;
+      cursor: default;
+      box-shadow: none;
+    }
+
+    .btn-icon {
+      width: 16px;
+      height: 16px;
+      border-radius: 999px;
+      border: 1px solid rgba(219, 234, 254, 0.8);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      background: rgba(30, 64, 175, 0.7);
+    }
+
+    .result-card {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      height: 100%;
+    }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .result-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+    }
+
+    .chip {
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      font-size: 0.75rem;
+      color: var(--muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .chip-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: #22c55e;
+    }
+
+    .score-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      border: 1px solid transparent;
+    }
+
+    .score-pill[data-score="High"] {
+      background: radial-gradient(circle at top left, rgba(22, 163, 74, 0.95), rgba(22, 101, 52, 0.98));
+      border-color: rgba(74, 222, 128, 0.9);
+      color: #ecfdf3;
+    }
+
+    .score-pill[data-score="Medium"] {
+      background: radial-gradient(circle at top left, rgba(234, 179, 8, 0.95), rgba(161, 98, 7, 0.98));
+      border-color: rgba(250, 204, 21, 0.9);
+      color: #fefce8;
+    }
+
+    .score-pill[data-score="Low"] {
+      background: radial-gradient(circle at top left, rgba(30, 64, 175, 0.95), rgba(15, 23, 42, 0.98));
+      border-color: rgba(129, 140, 248, 0.9);
+      color: #e0f2fe;
+    }
+
+    .score-label {
+      font-size: 0.9rem;
+    }
+
+    .score-confidence {
+      font-size: 0.8rem;
+      opacity: 0.95;
+    }
+
+    .recommendation {
+      font-size: 0.85rem;
+      color: #e5e7eb;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.96));
+      border: 1px dashed rgba(148, 163, 184, 0.7);
+    }
+
+    .prob-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .prob-tile {
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.98));
+      border: 1px solid rgba(31, 41, 55, 0.9);
+      font-size: 0.75rem;
+    }
+
+    .prob-label {
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .prob-bar-shell {
+      position: relative;
+      height: 6px;
+      border-radius: 999px;
+      background: #020617;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+
+    .prob-bar-fill {
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(129, 140, 248, 1), rgba(56, 189, 248, 1));
+      transition: width 0.25s ease-out;
+    }
+
+    .prob-value {
+      font-size: 0.8rem;
+      margin-top: 2px;
+      color: #e5e7eb;
+    }
+
+    .empty-state {
+      font-size: 0.85rem;
+      color: var(--muted);
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px dashed rgba(148, 163, 184, 0.4);
+    }
+
+    .error {
+      font-size: 0.8rem;
+      color: #fecaca;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: rgba(127, 29, 29, 0.85);
+      border: 1px solid rgba(248, 113, 113, 0.85);
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="title">
+            Lead Scoring
+            <span class="pill">XGBoost · Real-time</span>
+          </div>
+          <p class="subtitle">Enter lead attributes and get an instant High / Medium / Low score.</p>
+        </div>
+      </div>
+
+      <div class="badge-row">
+        <div class="badge"><span class="badge-dot"></span> &lt;100ms scoring</div>
+        <div class="badge">Tabular model · 12 features</div>
+        <div class="badge">Prioritize sales outreach</div>
+      </div>
+
+      <form id="lead-form">
+        <div class="field">
+          <label>
+            Age
+            <span class="hint">22–70</span>
+          </label>
+          <input type="number" id="age" name="age" min="18" max="100" value="45" required />
+        </div>
+
+        <div class="field">
+          <label>
+            Income ($)
+            <span class="hint">30k–500k</span>
+          </label>
+          <input type="number" id="income" name="income" min="0" step="1000" value="250000" required />
+        </div>
+
+        <div class="field">
+          <label>
+            Credit Score
+            <span class="hint">300–850</span>
+          </label>
+          <input type="number" id="credit_score" name="credit_score" min="300" max="850" value="780" required />
+        </div>
+
+        <div class="field">
+          <label>
+            Website Visits
+            <span class="hint">0–50</span>
+          </label>
+          <input type="number" id="website_visits" name="website_visits" min="0" max="50" value="25" required />
+        </div>
+
+        <div class="field">
+          <label>
+            Email Opens
+            <span class="hint">0–30</span>
+          </label>
+          <input type="number" id="email_opens" name="email_opens" min="0" max="30" value="15" required />
+        </div>
+
+        <div class="field">
+          <label>
+            Property Views
+            <span class="hint">0–25</span>
+          </label>
+          <input type="number" id="property_views" name="property_views" min="0" max="25" value="18" required />
+        </div>
+
+        <div class="field">
+          <label>
+            Contact Attempts
+            <span class="hint">0–10</span>
+          </label>
+          <input type="number" id="contact_attempts" name="contact_attempts" min="0" max="10" value="5" required />
+        </div>
+
+        <div class="field">
+          <label>
+            Time on Site (min)
+            <span class="hint">1–120</span>
+          </label>
+          <input type="number" id="time_on_site_minutes" name="time_on_site_minutes" min="1" max="120" value="90" required />
+        </div>
+
+        <div class="toggle-row">
+          <button type="button" class="toggle" data-on="true" data-field="inquiry_submitted">
+            <span>Inquiry submitted</span>
+            <div class="switch">
+              <div class="switch-thumb"></div>
+            </div>
+          </button>
+          <button type="button" class="toggle" data-on="true" data-field="financing_pre_approved">
+            <span>Financing pre-approved</span>
+            <div class="switch">
+              <div class="switch-thumb"></div>
+            </div>
+          </button>
+          <button type="button" class="toggle" data-on="true" data-field="budget_disclosed">
+            <span>Budget disclosed</span>
+            <div class="switch">
+              <div class="switch-thumb"></div>
+            </div>
+          </button>
+          <button type="button" class="toggle" data-on="true" data-field="location_preference_set">
+            <span>Location set</span>
+            <div class="switch">
+              <div class="switch-thumb"></div>
+            </div>
+          </button>
+        </div>
+
+        <div class="footer-row">
+          <div class="left-foot">
+            <span class="latency-dot"></span>
+            <span id="latency-label">Waiting for prediction…</span>
+          </div>
+          <button type="submit" class="submit-btn" id="submit-btn">
+            <span class="btn-icon">▶</span>
+            Score lead
+          </button>
+        </div>
+      </form>
+
+      <div id="form-error" class="error" style="display:none;margin-top:10px;"></div>
+    </div>
+
+    <div class="card">
+      <div class="result-card">
+        <div class="result-header">
+          <div class="result-title">Prediction</div>
+          <div class="chip">
+            <span class="chip-dot"></span>
+            XGBoost · 3-class
+          </div>
+        </div>
+
+        <div id="score-pill-container">
+          <div class="empty-state">
+            Run a prediction to see lead score, confidence, and suggested sales action.
+          </div>
+        </div>
+
+        <div id="recommendation" class="recommendation" style="display:none;"></div>
+
+        <div>
+          <div style="font-size:0.8rem;color:var(--muted);margin-bottom:4px;">Class probabilities</div>
+          <div class="prob-grid">
+            <div class="prob-tile">
+              <div class="prob-label">High</div>
+              <div class="prob-bar-shell">
+                <div class="prob-bar-fill" id="prob-high-bar"></div>
+              </div>
+              <div class="prob-value" id="prob-high-value">–</div>
+            </div>
+            <div class="prob-tile">
+              <div class="prob-label">Medium</div>
+              <div class="prob-bar-shell">
+                <div class="prob-bar-fill" id="prob-medium-bar"></div>
+              </div>
+              <div class="prob-value" id="prob-medium-value">–</div>
+            </div>
+            <div class="prob-tile">
+              <div class="prob-label">Low</div>
+              <div class="prob-bar-shell">
+                <div class="prob-bar-fill" id="prob-low-bar"></div>
+              </div>
+              <div class="prob-value" id="prob-low-value">–</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const form = document.getElementById("lead-form");
+      const toggles = Array.from(document.querySelectorAll(".toggle"));
+      const submitBtn = document.getElementById("submit-btn");
+      const latencyLabel = document.getElementById("latency-label");
+      const formError = document.getElementById("form-error");
+      const scorePillContainer = document.getElementById("score-pill-container");
+      const recommendationEl = document.getElementById("recommendation");
+      const probHighBar = document.getElementById("prob-high-bar");
+      const probMedBar = document.getElementById("prob-medium-bar");
+      const probLowBar = document.getElementById("prob-low-bar");
+      const probHighValue = document.getElementById("prob-high-value");
+      const probMedValue = document.getElementById("prob-medium-value");
+      const probLowValue = document.getElementById("prob-low-value");
+
+      const boolState = {
+        inquiry_submitted: 1,
+        financing_pre_approved: 1,
+        budget_disclosed: 1,
+        location_preference_set: 1,
+      };
+
+      toggles.forEach((toggle) => {
+        toggle.addEventListener("click", () => {
+          const field = toggle.getAttribute("data-field");
+          const isOn = toggle.getAttribute("data-on") === "true";
+          const next = !isOn;
+          toggle.setAttribute("data-on", String(next));
+          boolState[field] = next ? 1 : 0;
+        });
+      });
+
+      function setLoading(isLoading) {
+        if (isLoading) {
+          submitBtn.setAttribute("disabled", "true");
+          submitBtn.querySelector("span.btn-icon").textContent = "⏳";
+          latencyLabel.textContent = "Scoring lead…";
+        } else {
+          submitBtn.removeAttribute("disabled");
+          submitBtn.querySelector("span.btn-icon").textContent = "▶";
+        }
+      }
+
+      function setError(message) {
+        if (message) {
+          formError.style.display = "block";
+          formError.textContent = message;
+        } else {
+          formError.style.display = "none";
+          formError.textContent = "";
+        }
+      }
+
+      function updateProbs(probabilities) {
+        const safe = (v) => (typeof v === "number" && isFinite(v) ? v : 0);
+        const pHigh = safe(probabilities?.High);
+        const pMedium = safe(probabilities?.Medium);
+        const pLow = safe(probabilities?.Low);
+
+        probHighBar.style.width = (pHigh * 100).toFixed(0) + "%";
+        probMedBar.style.width = (pMedium * 100).toFixed(0) + "%";
+        probLowBar.style.width = (pLow * 100).toFixed(0) + "%";
+
+        probHighValue.textContent = (pHigh * 100).toFixed(1) + "%";
+        probMedValue.textContent = (pMedium * 100).toFixed(1) + "%";
+        probLowValue.textContent = (pLow * 100).toFixed(1) + "%";
+      }
+
+      function renderScore(result) {
+        if (!result || !result.lead_score) {
+          scorePillContainer.innerHTML =
+            '<div class="empty-state">No prediction available. Try scoring a lead.</div>';
+          recommendationEl.style.display = "none";
+          updateProbs({});
+          return;
+        }
+
+        const score = result.lead_score;
+        const confidence = typeof result.confidence === "number" ? result.confidence : 0;
+
+        scorePillContainer.innerHTML =
+          '<div class="score-pill" data-score="' +
+          score +
+          '">' +
+          '<div class="score-label">Lead tier: <strong>' +
+          score +
+          "</strong></div>" +
+          '<div class="score-confidence">' +
+          (confidence * 100).toFixed(1) +
+          "% confidence</div>" +
+          "</div>";
+
+        if (result.recommendation) {
+          recommendationEl.style.display = "block";
+          recommendationEl.textContent = result.recommendation;
+        } else {
+          recommendationEl.style.display = "none";
+        }
+
+        updateProbs(result.probabilities || {});
+        latencyLabel.textContent = "Last prediction complete.";
+      }
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        setError("");
+
+        const payload = {
+          age: Number(document.getElementById("age").value),
+          income: Number(document.getElementById("income").value),
+          credit_score: Number(document.getElementById("credit_score").value),
+          website_visits: Number(document.getElementById("website_visits").value),
+          email_opens: Number(document.getElementById("email_opens").value),
+          property_views: Number(document.getElementById("property_views").value),
+          contact_attempts: Number(document.getElementById("contact_attempts").value),
+          time_on_site_minutes: Number(document.getElementById("time_on_site_minutes").value),
+          inquiry_submitted: boolState.inquiry_submitted,
+          financing_pre_approved: boolState.financing_pre_approved,
+          budget_disclosed: boolState.budget_disclosed,
+          location_preference_set: boolState.location_preference_set,
+        };
+
+        if (Object.values(payload).some((v) => Number.isNaN(v))) {
+          setError("Please make sure all fields are filled with valid numbers.");
+          return;
+        }
+
+        try {
+          setLoading(true);
+          const started = performance.now();
+          const response = await fetch("/predict", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          });
+
+          const elapsed = performance.now() - started;
+
+          if (!response.ok) {
+            let detail = "Request failed: " + response.status;
+            try {
+              const errData = await response.json();
+              if (errData && errData.detail) {
+                detail = Array.isArray(errData.detail)
+                  ? errData.detail.map((d) => d.msg || JSON.stringify(d)).join("; ")
+                  : errData.detail;
+              }
+            } catch (_) {}
+            setError(detail);
+            latencyLabel.textContent = "Error (" + elapsed.toFixed(0) + " ms)";
+            return;
+          }
+
+          const data = await response.json();
+          renderScore(data);
+          latencyLabel.textContent = "Prediction in " + elapsed.toFixed(0) + " ms";
+        } catch (err) {
+          console.error(err);
+          setError("Network or server error. Is the API running on this host?");
+          latencyLabel.textContent = "Error contacting API";
+        } finally {
+          setLoading(false);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
+
+

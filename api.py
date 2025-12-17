@@ -4,6 +4,7 @@ Deploy with: uvicorn api:app --reload
 """
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from typing import Dict, List
 import pickle
@@ -51,10 +52,18 @@ class LeadOutput(BaseModel):
 
 @app.get("/")
 def root():
+    """Basic service info"""
     return {
         "message": "Lead Scoring API",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "ui": "/ui"
     }
+
+
+@app.get("/ui", response_class=FileResponse)
+def ui():
+    """Serve minimal HTML frontend"""
+    return FileResponse("frontend.html")
 
 
 @app.get("/health")
