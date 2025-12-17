@@ -16,7 +16,7 @@ app = FastAPI(
 )
 
 # Load model
-with open('lead_scoring_model.pkl', 'rb') as f:
+with open('lead_scoring_model_xgb.pkl', 'rb') as f:
     artifacts = pickle.load(f)
 
 model = artifacts['model']
